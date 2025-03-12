@@ -5,7 +5,12 @@ import os
 load_dotenv()
 
 MONGODB_CONN = os.getenv('MONGODB_CONN')
-DB_OBAT = os.getenv('DB_OBAT')
+CLUSTER = os.getenv('DB')
+COLLECTION_OBAT = os.getenv('COLLECTION_OBAT')
+COLLECTION_USER = os.getenv('COLLECTION_USER')
 
-db = MongoClient(MONGODB_CONN)
-obat = db[DB_OBAT]
+client = MongoClient(MONGODB_CONN)
+cluster = client[CLUSTER]
+
+obatDatas = cluster[COLLECTION_OBAT]
+userDatas = cluster[COLLECTION_USER]

@@ -15,9 +15,13 @@
       type="module"
     ></script>
     <style>
-        button:hover{
-            background-color: #329543 !important;
-        }
+      * {
+        font-family: "Atkinson Hyperlegible Next", sans-serif;
+        font-weight: 600;
+      }
+      button:hover {
+        background-color: #329543 !important;
+      }
       .form-control {
         border-top: none;
         border-left: none;
@@ -49,8 +53,8 @@
           text-align: center;
         }
 
-        .buttonLogin button{
-            width: 30% !important;
+        .buttonLogin button {
+          width: 30% !important;
         }
 
         .container2 {
@@ -69,15 +73,20 @@
         justify-content: center;
       "
     >
+      {% with pesan = get_flashed_messages() %} {% if pesan %} {% for pesan in
+      pesan %}
+      <div class="alert alert-danger" role="alert">{{msg}}</div>
+      {% endfor%} {% endif %} {% endwith %}
       <h1 style="text-align: center">Login</h1>
-      <form style="padding: 80px">
+      <form style="padding: 80px" action="{{url_for('index')}}" method="post">
         <div class="mb-3">
           <input
-            type="email"
+            type="text"
             class="form-control mt-5"
             id="exampleInputEmail1"
             aria-describedby="emailHelp"
             placeholder="Masukkan Username"
+            name="username"
           />
         </div>
         <div class="mb-3" style="border: none; margin-top: 100px">
@@ -86,6 +95,7 @@
             class="form-control"
             id="exampleInputPassword1"
             placeholder="Masukkan Password"
+            name="password"
           />
         </div>
         <div class="buttonLogin" style="display: flex; justify-content: center">
