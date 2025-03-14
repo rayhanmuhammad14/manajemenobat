@@ -1,0 +1,361 @@
+{% extends "component/base.html" %} {% block content %}
+
+<div
+  class="container-fluid d-flex flex-wrap justify-content-center gap-4 p-4"
+  style="min-height: 100vh; background-color: #f8f9fa; margin-top: 10vh"
+>
+  <!-- Pendapatan Bulan Ini -->
+  <div
+    class="card shadow-lg"
+    style="width: 30rem; height: 400px; color: #36ff58"
+  >
+    <div>
+      <canvas id="myChart" width="200"></canvas>
+    </div>
+    <div
+      class="card-body d-flex flex-column justify-content-center align-items-center text-center bg-primary"
+    >
+      <i class="fas fa-calendar-alt fa-3x mb-3"></i>
+      <h5 class="card-title">Pendapatan Bulan Ini</h5>
+      <h3>Rp. 20.000.000</h3>
+    </div>
+  </div>
+
+  <!-- Pendapatan Hari Ini -->
+  <div
+    class="card text-white bg-success shadow-lg"
+    style="width: 18rem; height: 200px"
+  >
+    <div
+      class="card-body d-flex flex-column justify-content-center align-items-center text-center"
+    >
+      <i class="fas fa-chart-line fa-3x mb-3"></i>
+      <h5 class="card-title">Pendapatan Hari Ini</h5>
+      <h3>Rp. 500.000</h3>
+    </div>
+  </div>
+
+  <!-- Total Pendapatan -->
+  <div
+    class="card text-white bg-warning shadow-lg"
+    style="width: 18rem; height: 200px"
+  >
+    <div
+      class="card-body d-flex flex-column justify-content-center align-items-center text-center"
+    >
+      <i class="fas fa-coins fa-3x mb-3"></i>
+      <h5 class="card-title">Total Pendapatan</h5>
+      <h3>Rp. 200.000.000</h3>
+    </div>
+  </div>
+
+  <!-- Form Tambah Obat -->
+  <form
+    id="form-obat"
+    style="
+      width: 90%;
+      max-width: 800px;
+      padding: 20px;
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    "
+    method="post"
+    action="{{url_for('home')}}"
+  >
+    <h3 style="text-align: center; margin-bottom: 20px">Tambah Obat</h3>
+
+    <div id="obat-container" style="width: 100%">
+      <!-- Input pertama (default) -->
+      <div class="row mb-2 obat-group position-relative">
+        <div class="col-md-5">
+          <div class="dropdown">
+            <input
+              type="text"
+              name="obat"
+              class="form-control dropdown-toggle obat-input"
+              placeholder="Pilih atau ketik obat"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              autocomplete="off"
+            />
+            <ul class="dropdown-menu obat-dropdown">
+            {% for obat in dataObat %}
+              <li><a class="dropdown-item" href="#" data-harga = "{{obat.harga}}">{{obat.obat}}</a></li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+        <div class="col-md-5">
+
+          <input
+            type="text"
+            name="harga"
+            class="form-control text-center"
+            placeholder="Harga"
+            id="harga"
+            readonly
+          />
+        </div>
+        <div class="col-md-2">
+          <button
+            type="button"
+            class="btn btn-danger hapus"
+            style="width: 100%"
+          >
+            Hapus
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      id="tambah-obat"
+      class="btn btn-primary mt-3"
+      style="width: 10em"
+    >
+      Tambah Obat
+    </button>
+    <button
+      type="submit"
+      id="tambah-obat"
+      class="btn btn-success mt-3 submit"
+      style="width: 11em"
+    >
+      Submit
+    </button>
+  </form>
+</div>
+
+<!-- Load jQuery dan Bootstrap -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  $(document).ready(function () {
+    // Fitur autocomplete dropdown
+    $(document).on("input", ".obat-input", function () {
+      let value = $(this).val().toLowerCase();
+      let dropdown = $(this).siblings(".obat-dropdown");
+
+      if (value.length > 0) {
+        dropdown.addClass("show");
+        dropdown.find(".dropdown-item").each(function () {
+          let text = $(this).text().toLowerCase();
+          if (text.includes(value)) {
+            $(this).show();
+          } else {
+            $(this).hide();
+          }
+        });
+      } else {
+        dropdown.removeClass("show");
+      }
+    });
+
+    // Pilih item dari dropdown
+    $(document).on("click", ".obat-dropdown .dropdown-item", function () {
+      let selectedText = $(this).text();
+      let input = $(this).closest(".dropdown").find(".obat-input");
+      input.val(selectedText);
+      $(this).closest(".obat-dropdown").removeClass("show");
+    });
+
+    let dataObat = []; // Variabel global untuk menyimpan data obat
+
+// Ambil data obat dari server saat halaman dimuat
+$.ajax({
+  url: "/api/obat",
+  type: "GET",
+  dataType: "json",
+  success: function (data) {
+    dataObat = data; // Simpan data obat di variabel
+    console.log("Data Obat:", dataObat);
+  },
+  error: function (xhr, status, error) {
+    console.error("Gagal mengambil data obat:", error);
+  },
+});
+
+// Tambah input baru saat tombol "Tambah Obat" diklik
+$("#tambah-obat").click(function () {
+  let inputBaru = `
+    <div id="obat-container" style="width: 100%">
+      <!-- Input pertama (default) -->
+      <div class="row mb-2 obat-group position-relative">
+        <div class="col-md-5">
+          <div class="dropdown">
+            <input
+              type="text"
+              name="obat"
+              class="form-control dropdown-toggle obat-input"
+              placeholder="Pilih atau ketik obat"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              autocomplete="off"
+            />
+            <ul class="dropdown-menu obat-dropdown">
+              <li><a class="dropdown-item" href="#" data-harga = "$k"></a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-md-5">
+
+          <input
+            type="text"
+            name="harga"
+            class="form-control text-center"
+            placeholder="Harga"
+            id="harga"
+            readonly
+          />
+        </div>
+        <div class="col-md-2">
+          <button
+            type="button"
+            class="btn btn-danger hapus"
+            style="width: 100%"
+          >
+            Hapus
+          </button>
+        </div>
+      </div>
+    </div>`;
+
+  $("#obat-container").append(inputBaru);
+});
+
+$(document).on("input", ".obat-input", function () {
+      let value = $(this).val().toLowerCase();
+      let dropdown = $(this).siblings(".obat-dropdown");
+      dropdown.empty(); // Hapus isi dropdown sebelumnya
+
+      if (value.length > 0) {
+        dropdown.addClass("show");
+        let filteredObat = dataObat.filter(obat => obat.obat.toLowerCase().includes(value));
+
+        filteredObat.forEach(obat => {
+          dropdown.append(`<li><a class="dropdown-item" href="#" data-harga="${obat.harga}">${obat.obat}</a></li>`);
+        });
+      } else {
+        dropdown.removeClass("show");
+      }
+    });
+    // Hapus input
+    $(document).on("click", ".hapus", function () {
+      if ($(".obat-group").length > 1) {
+        $(this).closest(".obat-group").remove();
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Oops....",
+          text: "Minimal Harus Ada Satu Obat!!!",
+        });
+      }
+    });
+
+     // Format angka otomatis dengan titik tanpa batasan jumlah
+     function formatRupiah(input) {
+      let angka = input.replace(/\D/g, ""); // Hanya ambil angka
+      return angka.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+    $(document).on("input", "#harga", function () {
+      let input = $(this);
+      let cursorPos = input.prop("selectionStart"); // Simpan posisi kursor
+      let angkaSebelum = input.val().replace(/\./g, ""); // Simpan angka sebelum diformat
+      input.val(formatRupiah(input.val())); // Format angka
+      let angkaSesudah = input.val().replace(/\./g, ""); // Simpan angka setelah diformat
+
+      // Hitung perubahan panjang angka untuk menyesuaikan posisi kursor
+      let perbedaanPanjang = angkaSesudah.length - angkaSebelum.length;
+      let posisiBaru = cursorPos + perbedaanPanjang;
+      input.prop("selectionStart", posisiBaru);
+      input.prop("selectionEnd", posisiBaru);
+    });
+
+    
+    $(document).on("click", ".obat-dropdown .dropdown-item", function (e) {
+      e.preventDefault();
+      let selectedText = $(this).text();
+      let harga = $(this).data("harga"); // Ambil harga dari data-harga
+      let parent = $(this).closest(".obat-group");
+
+      parent.find(".obat-input").val(selectedText);
+      parent.find("#harga").val(harga ? "Rp. " + harga.toLocaleString("id-ID") : "");
+      
+      $(this).closest(".dropdown-menu").removeClass("show");
+    });
+
+    $(".submit").click(function (e) {
+        e.preventDefault(); // Mencegah form submit langsung
+
+        let dataObat = [];
+
+        $(".obat-group").each(function () {
+            let obat = $(this).find(".obat-input").val();
+            let harga = $(this).find("#harga").val().replace(/\D/g, ""); 
+
+            dataObat.push({ obat: obat, harga: parseInt(harga) || 0 }); 
+        });
+
+        $.ajax({
+            url: "/home",
+            type: "POST",
+            contentType: "application/json", 
+            data: JSON.stringify({ dataObat: dataObat }),
+            success: function (response) {
+                Swal.fire({
+                    icon: "success",
+                    title: "Sukses!",
+                    text: response.message,
+                });
+            },
+            error: function (xhr, status, error) {
+                Swal.fire({
+                    icon: "error",
+                    title: "Error!",
+                    text: "Gagal menyimpan data",
+                });
+                console.error("Error:", error);
+            },
+        });
+    });
+  });
+
+  // Chart.js
+  const ctx = document.getElementById("myChart");
+  const labels = ["0 - 10", "11 - 20", "21-31"];
+
+  new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: "# of Votes",
+          data: [2000000, 1000000, 3700000],
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 10000000,
+          ticks: {
+            stepSize: 2000000,
+            callback: function (value) {
+              return "Rp. " + value.toLocaleString("id-ID");
+            },
+          },
+        },
+      },
+    },
+  });
+</script>
+
+{% endblock %}
